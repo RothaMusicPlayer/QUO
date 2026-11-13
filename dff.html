@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QUO - Social & Chat</title>
+    <style>
+        :root {
+            --bg-main: #ffffff;
+            --bg-chat: #f0f2f5;
+            --bg-header: #3390ec;
+            --text-primary: #1c242b;
+            --text-secondary: #879099;
+            --bg-hover: #f8fafc;
+            --telegram-blue: #3390ec;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-main); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; }
+
+        /* Auth Overlay (Login / Register) */
+        #authOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: #fff; border-radius: 28px; width: 100%; max-width: 380px; padding: 32px 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: scaleUp 0.25s ease; }
+        .card input { width: 100%; padding: 14px 18px; border-radius: 14px; border: 1.5px solid #e2e8f0; margin-top: 8px; margin-bottom: 14px; outline: none; font-size: 15px; transition: border-color 0.2s; }
+        .card input:focus { border-color: var(--telegram-blue); }
+        .card button { width: 100%; padding: 14px; border-radius: 14px; background: var(--telegram-blue); color: white; border: none; font-weight: 600; cursor: pointer; font-size: 16px; margin-top: 6px; box-shadow: 0 4px 12px rgba(51,144,236,0.3); }
+        .switch-auth { margin-top: 16px; font-size: 13.5px; color: var(--telegram-blue); cursor: pointer; font-weight: 500; }
+
+        /* Custom Modern Alert Modal */
+        #customAlertModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 3500; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        .custom-alert-card { background: #fff; width: 100%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.25); animation: scaleUp 0.2s ease; }
+        @keyframes scaleUp { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .custom-alert-icon { font-size: 40px; margin-bottom: 12px; }
+        .custom-alert-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+        .custom-alert-message { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.4; }
+        .custom-alert-btn { width: 100%; padding: 12px; border-radius: 14px; background: var(--telegram-blue); color: white; border: none; font-weight: 600; cursor: pointer; font-size: 15px; }
+
+        /* View Single Post Modal */
+        #viewPostModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 16px; }
+        .view-post-content { background: #0f172a; width: 100%; max-width: 380px; max-height: 90vh; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.6); display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.1); }
+        .view-post-header { padding: 14px 18px; background: rgba(15,23,42,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); color: white; }
+        .view-post-media-box { background: #000; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; min-height: 320px; cursor: pointer; }
+        .view-post-media-box img, .view-post-media-box video { width: 100%; height: 100%; max-height: 450px; object-fit: contain; }
+
+        /* Switch Account Modal */
+        #switchAccountModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2500; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        .switch-card { background: #fff; width: 100%; max-width: 360px; border-radius: 28px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.25); animation: scaleUp 0.2s ease; }
+        .account-list { max-height: 220px; overflow-y: auto; margin: 16px 0; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+        .account-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 14px; cursor: pointer; transition: background 0.15s; border: 1px solid #e2e8f0; }
+        .account-item:hover { background: #f1f5f9; }
+        .account-item.active-acc { border: 2px solid var(--telegram-blue); background: #f0f7ff; font-weight: bold; }
+
+        /* Blocked Users Modal */
+        #blockedUsersModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2900; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        .blocked-card { background: #fff; width: 100%; max-width: 360px; border-radius: 28px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: scaleUp 0.2s ease; }
+        .blocked-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 14px; border: 1px solid #e2e8f0; }
+        .unblock-btn { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+        .unblock-btn:hover { background: #dc2626; }
+
+        /* Followers List Modal */
+        #followersModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2800; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        .followers-card { background: #fff; width: 100%; max-width: 340px; border-radius: 28px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: scaleUp 0.2s ease; }
+        .follower-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 14px; cursor: pointer; transition: background 0.15s; border: 1px solid #e2e8f0; }
+        .follower-row:hover { background: #f1f5f9; }
+
+        /* Post Delete Confirmation Modal */
+        #postDeleteConfirmModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
+        .delete-card { background: #fff; width: 100%; max-width: 340px; border-radius: 28px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: scaleUp 0.2s ease; }
+
+        /* Profile Modal */
+        #profileModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        .profile-card { background: #fff; width: 100%; max-width: 400px; max-height: 85vh; border-radius: 28px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: scaleUp 0.2s ease; }
+        .profile-body { overflow-y: auto; flex: 1; margin-top: 10px; padding-right: 4px; }
+        
+        .profile-avatar { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; font-weight: bold; background-size: cover; background-position: center; cursor: pointer; position: relative; background-color: var(--telegram-blue); flex-shrink: 0; overflow: hidden; box-shadow: 0 4px 12px rgba(51,144,236,0.3); }
+        
+        .profile-stats { display: flex; justify-content: center; gap: 20px; margin: 12px 0; font-size: 13.5px; color: var(--text-secondary); }
+        .follower-stat-btn { cursor: pointer; padding: 6px 12px; border-radius: 12px; transition: background 0.15s; }
+        .follower-stat-btn:hover { background: #f1f5f9; }
+        .profile-stats b { color: var(--text-primary); }
+
+        .my-post-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; margin-bottom: 12px; text-align: left; position: relative; }
+        .my-post-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; margin-bottom: 8px; }
+        .my-post-text { font-size: 14px; color: #1e293b; margin-bottom: 10px; word-break: break-word; line-height: 1.4; }
+        .my-post-media { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: opacity 0.15s; }
+        .my-post-media:hover { opacity: 0.93; }
+        .my-post-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .mini-action-btn { padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 10px; border: none; cursor: pointer; }
+        .btn-privacy { background: #e2e8f0; color: #334155; }
+        .btn-delete-post { background: #fee2e2; color: #ef4444; }
+
+        /* App Layout */
+        .app { display: flex; width: 100%; height: 100%; position: relative; }
+        .sidebar { width: 380px; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; height: 100%; background: #fff; z-index: 10; position: relative; }
+
+        /* --- Sized Down Modern Bottom Navigation Bar --- */
+        .bottom-nav { 
+            display: flex; 
+            background: rgba(255, 255, 255, 0.96); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid #edf2f7; 
+            padding: 5px 8px 6px 8px; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 20; 
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.04); 
+            position: relative; 
+        }
+        
+        .nav-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 2px; 
+            cursor: pointer; 
+            color: var(--text-secondary); 
+            font-size: 10.5px; 
+            font-weight: 600; 
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+            flex: 1; 
+            padding: 4px 2px; 
+            position: relative; 
+            border-radius: 12px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .nav-item:hover {
+            color: var(--telegram-blue);
+            background: #f8fafc;
+        }
+
+        .nav-item svg { 
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.25s ease, stroke 0.25s ease;
+        }
+        
+        .nav-item.active { 
+            color: var(--telegram-blue); 
+        }
+
+        .nav-item.active svg {
+            transform: translateY(-1px) scale(1.06);
+        }
+
+        /* --- Dropdown Menu Styles --- */
+        .dropdown-container { 
+            position: relative; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        
+        .menu-icon-btn { 
+            background: transparent; 
+            border: none; 
+            color: inherit; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            padding: 0; 
+        }
+
+        .dropdown-menu { 
+            display: none; 
+            position: absolute; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            bottom: 56px; 
+            background: #fff; 
+            color: var(--text-primary); 
+            min-width: 180px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.18); 
+            border-radius: 18px; 
+            overflow: hidden; 
+            z-index: 3000; 
+            animation: popupMenuAnim 0.2s cubic-bezier(0.16, 1, 0.3, 1); 
+            border: 1px solid #edf2f7; 
+        }
+        @keyframes popupMenuAnim { 
+            from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.95); } 
+            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } 
+        }
+
+        .dropdown-item { 
+            padding: 12px 16px; 
+            font-size: 13.5px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            transition: background 0.15s; 
+            color: #1e293b; 
+            font-weight: 500; 
+        }
+        .dropdown-item:hover { background: #f8fafc; }
+        .dropdown-item.danger { color: #ef4444; }
+
+        /* Nav Badge for Unread Messages */
+        .nav-badge { position: absolute; top: 1px; right: 28%; background: var(--telegram-blue); color: white; font-size: 9.5px; font-weight: 700; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(51,144,236,0.3); }
+
+        .search { padding: 12px 16px; }
+        .search input { width: 100%; padding: 10px 16px 10px 40px; border-radius: 22px; border: none; background: #f1f5f9; outline: none; font-size: 14.5px; transition: background 0.2s; }
+        .search input:focus { background: #e2e8f0; }
+        
+        .chat-list { flex: 1; overflow-y: auto; padding: 6px; }
+        .chat-item { display: flex; align-items: center; padding: 12px; border-radius: 16px; cursor: pointer; gap: 14px; margin-bottom: 4px; transition: background 0.15s; }
+        .chat-item:hover { background: var(--bg-hover); }
+
+        .avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px; flex-shrink: 0; background-size: cover; background-position: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .chat-info { flex: 1; min-width: 0; }
+        .chat-top { display: flex; justify-content: space-between; font-weight: 600; font-size: 15.5px; margin-bottom: 4px; }
+        .chat-msg { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .time { font-size: 12px; color: var(--text-secondary); font-weight: normal; display: flex; gap: 4px; align-items: center; }
+        
+        .badge { background: var(--telegram-blue); color: white; font-size: 11.5px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 8px; }
+
+        /* TikTok Style Feed Section with 1080p Video Support */
+        #feedSection { display: flex; flex-direction: column; flex: 1; overflow: hidden; background: #000; position: relative; }
+        
+        .tiktok-feed-container { flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; height: 100%; position: relative; }
+        .tiktok-feed-container::-webkit-scrollbar { display: none; }
+
+        .tiktok-reel { width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative; display: flex; align-items: center; justify-content: center; background: #000; }
+        .tiktok-media { width: 100%; height: 100%; object-fit: cover; max-width: 1080px; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+        
+        .tiktok-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.35) 100%); z-index: 2; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+        
+        .tiktok-top-bar { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
+        
+        .tiktok-create-trigger { 
+            background: rgba(255, 255, 255, 0.22); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            color: white; 
+            border: 1px solid rgba(255, 255, 255, 0.35); 
+            padding: 8px 18px; 
+            border-radius: 24px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .tiktok-create-trigger:hover { background: rgba(255, 255, 255, 0.35); }
+
+        .tiktok-content-box { pointer-events: auto; max-width: 85%; padding-bottom: 10px; }
+        .tiktok-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; cursor: pointer; }
+        .tiktok-username { color: white; font-weight: 700; font-size: 15.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+        .tiktok-time { color: #cbd5e1; font-size: 12px; }
+        .tiktok-desc { color: white; font-size: 14.5px; line-height: 1.45; text-shadow: 0 1px 3px rgba(0,0,0,0.6); margin-bottom: 12px; word-break: break-word; }
+
+        /* Floating Create Post Modal */
+        #tiktokUploadModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3200; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
+        .tiktok-upload-card { background: #fff; width: 100%; max-width: 360px; border-radius: 28px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: scaleUp 0.2s ease; }
+
+        /* Chat Window Header Styling */
+        .chat-win { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); height: 100%; position: relative; }
+        .chat-win-header { background: var(--bg-header); color: white; padding: 10px 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .chat-header-user { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        
+        .back-btn { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; transition: background 0.15s; flex-shrink: 0; }
+        .back-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .chat-header-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 15.5px; font-weight: bold; color: white; background-color: var(--telegram-blue); flex-shrink: 0; }
+        
+        .chat-menu-container { position: relative; display: inline-block; }
+        .chat-menu-btn { background: transparent; border: none; color: white; font-size: 22px; font-weight: bold; cursor: pointer; padding: 4px 8px; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .chat-menu-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .chat-dropdown-menu { display: none; position: absolute; right: 0; top: 45px; background: #fff; color: var(--text-primary); min-width: 170px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); border-radius: 16px; overflow: hidden; z-index: 3000; animation: fadeInMenu 0.15s ease; border: 1px solid #e2e8f0; }
+        .chat-dropdown-item { padding: 12px 18px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.15s; color: #333; font-weight: 500; }
+        .chat-dropdown-item:hover { background: #f8fafc; }
+        .chat-dropdown-item.danger { color: #ef4444; }
+
+        .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .msg-container { display: flex; flex-direction: column; max-width: 78%; margin-bottom: 4px; position: relative; }
+        .msg-container.in { align-self: flex-start; align-items: flex-start; }
+        .msg-container.out { align-self: flex-end; align-items: flex-end; }
+
+        .msg { padding: 10px 16px; border-radius: 18px; font-size: 15px; line-height: 1.45; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg-container.in .msg { background: #fff; border-bottom-left-radius: 4px; color: #1c242b; }
+        .msg-container.out .msg { background: #2b5278; color: #fff; border-bottom-right-radius: 4px; }
+        
+        .msg-info { font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: flex; gap: 6px; align-items: center; }
+        
+        .status-text { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .status-text.seen { color: #22c55e; }
+        .status-text.sent { color: #94a3b8; }
+
+        .input-bar { background: #fff; padding: 12px 16px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #e6e6e6; }
+        .input-bar input { flex: 1; padding: 12px 18px; border-radius: 24px; border: 1.5px solid #e2e8f0; outline: none; font-size: 15px; transition: border-color 0.2s; background: #fafafa; }
+        .input-bar input:focus { border-color: var(--telegram-blue); background: #fff; }
+        .send-btn { background: var(--telegram-blue); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(51,144,236,0.3); transition: transform 0.1s; }
+        .send-btn:active { transform: scale(0.92); }
+
+        @media(max-width: 768px) {
+            .sidebar { width: 100%; }
+            .chat-win { position: fixed; inset: 0; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 30; }
+            .chat-win.open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Overlay -->
+    <div id="authOverlay" onclick="closeAuthOverlay(event)">
+        <div class="card" id="authCard" onclick="event.stopPropagation()">
+            <div style="font-size: 44px; margin-bottom: 10px;">💬</div>
+            <h2 id="authTitle" style="font-size: 22px; font-weight: 700; color: #1c242b;">QUO - Register</h2>
+            <p id="authSubtitle" style="font-size: 13.5px; color: #64748b; margin: 8px 0 20px;">Create a username and password.</p>
+            
+            <input type="text" id="authUsername" placeholder="Username">
+            <input type="password" id="authPassword" placeholder="Password">
+            
+            <button id="authBtn" onclick="handleAuth()">Sign Up</button>
+            <div class="switch-auth" id="switchAuthText" onclick="toggleAuthMode()">Already have an account? Log In</div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal">
+        <div class="custom-alert-card">
+            <div class="custom-alert-icon" id="customAlertIcon">⚠️</div>
+            <h3 class="custom-alert-title" id="customAlertTitle">Notice</h3>
+            <p class="custom-alert-message" id="customAlertMessage">Message goes here...</p>
+            <button class="custom-alert-btn" onclick="closeCustomAlert()">OK</button>
+        </div>
+    </div>
+
+    <!-- View Single Post Modal -->
+    <div id="viewPostModal" onclick="closeViewPostModal(event)">
+        <div class="view-post-content" onclick="event.stopPropagation()">
+            <div class="view-post-header">
+                <span id="viewPostAuthor" style="font-weight:700; font-size:15.5px;">Post</span>
+                <button onclick="closeViewPostModal()" style="background:rgba(255,255,255,0.12); border:none; color:white; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+            <div class="view-post-media-box" id="viewPostMediaContainer"></div>
+            <div id="viewPostText" style="padding:16px; font-size:14.5px; text-align:left; color:#e2e8f0; max-height:120px; overflow-y:auto; background:#0f172a; line-height: 1.45;"></div>
+        </div>
+    </div>
+
+    <!-- Switch Account Modal -->
+    <div id="switchAccountModal" onclick="closeSwitchModal(event)">
+        <div class="switch-card" onclick="event.stopPropagation()">
+            <h3 style="font-size: 19px; font-weight: 700; margin-bottom: 6px;">Switch Account</h3>
+            <p style="font-size: 13px; color: #707579; margin-bottom: 14px;">Select an account to switch instantly</p>
+            
+            <div class="account-list" id="savedAccountListContainer"></div>
+
+            <button onclick="openAddAccountFromModal()" style="width: 100%; padding: 12px; background: var(--telegram-blue); color: white; border: none; margin-top: 8px; border-radius: 14px; font-size: 14.5px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(51,144,236,0.3);">+ Add Account</button>
+            <button onclick="closeSwitchModal()" style="margin-top: 12px; background: none; border: none; color: #707579; cursor: pointer; font-size: 14px; font-weight: 600;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Blocked Users Modal -->
+    <div id="blockedUsersModal" onclick="closeBlockedUsersModal(event)">
+        <div class="blocked-card" onclick="event.stopPropagation()">
+            <h3 style="font-size: 19px; font-weight: 700; margin-bottom: 6px;">Blocked Users</h3>
+            <p style="font-size: 13px; color: #707579; margin-bottom: 14px;">Manage and unblock users easily</p>
+            
+            <div class="account-list" id="blockedUsersListContainer"></div>
+
+            <button onclick="closeBlockedUsersModal()" style="width: 100%; margin-top: 10px; padding: 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer;">Close</button>
+        </div>
+    </div>
+
+    <!-- Followers / Following List Modal -->
+    <div id="followersModal" onclick="closeFollowersModal(event)">
+        <div class="followers-card" onclick="event.stopPropagation()">
+            <h3 id="followersModalTitle" style="font-size: 18px; font-weight: 700; margin-bottom: 14px;">Followers</h3>
+            <div class="account-list" id="followersListContainer"></div>
+            <button onclick="closeFollowersModal()" style="margin-top: 10px; background: none; border: none; color: #707579; cursor: pointer; font-size: 14px; font-weight: 600;">Close</button>
+        </div>
+    </div>
+
+    <!-- Post Delete Confirmation Modal -->
+    <div id="postDeleteConfirmModal" onclick="closePostDeleteModal(event)">
+        <div class="delete-card" onclick="event.stopPropagation()">
+            <div style="font-size: 36px; margin-bottom: 10px;">🗑️</div>
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #ef4444;">Delete Post</h3>
+            <p style="font-size: 13px; color: #707579; margin-bottom: 18px; line-height: 1.4;">Are you sure you want to delete this post?</p>
+            
+            <button id="confirmDeletePostBtn" style="width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 14px; font-size: 14.5px; font-weight: 600; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(239,68,68,0.3);">Delete</button>
+            <button onclick="closePostDeleteModal()" style="background: none; border: none; color: #707579; cursor: pointer; font-size: 14px; font-weight: 600;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" onclick="closeProfile(event)">
+        <div class="profile-card" id="profileCardContent" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <!-- TikTok Upload Modal -->
+    <div id="tiktokUploadModal" onclick="closeTiktokUpload(event)">
+        <div class="tiktok-upload-card" onclick="event.stopPropagation()">
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Create Reel / Post</h3>
+            <textarea id="postTextInput" rows="3" placeholder="What's on your mind?..." style="width:100%; padding:12px 14px; border-radius:14px; border:1.5px solid #e2e8f0; outline:none; resize:none; font-size:14.5px; margin-bottom:12px;"></textarea>
+            
+            <div id="mediaPreviewContainer" style="display:none; position:relative; margin-bottom:12px;">
+                <img id="imgPreview" style="width:100%; max-height:150px; object-fit:cover; border-radius:12px; display:none;">
+                <video id="vidPreview" style="width:100%; max-height:150px; object-fit:cover; border-radius:12px; display:none;" controls></video>
+                <button onclick="clearSelectedMedia()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.65); color:white; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <label class="media-picker-label" style="cursor:pointer; font-size:14px; color:var(--telegram-blue); font-weight:600;">
+                    📁 Choose Photo / 1080p Video (Max 95MB)
+                    <input type="file" id="postFilePicker" style="display:none;" onchange="handleFileSelect(event)">
+                </label>
+            </div>
+            
+            <button onclick="createPost()" style="width:100%; padding:12px; background:var(--telegram-blue); color:white; border:none; border-radius:14px; font-weight:600; cursor:pointer; font-size:15px; margin-bottom:8px; box-shadow: 0 4px 12px rgba(51,144,236,0.3);">Post</button>
+            <button onclick="closeTiktokUpload()" style="width:100%; background:none; border:none; color:#707579; cursor:pointer; font-size:13.5px; font-weight:600;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app">
+        <section class="sidebar">
+            <!-- TikTok Feed View -->
+            <div id="feedSection">
+                <div class="tiktok-feed-container" id="tiktokFeedContainer" oncontextmenu="return false;"></div>
+            </div>
+
+            <!-- Chats View -->
+            <div id="chatsContainer" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
+                <div class="search">
+                    <input type="text" id="searchInput" placeholder="Search chats or username..." oninput="renderChats()">
+                </div>
+                <div class="chat-list" id="chatList"></div>
+            </div>
+
+            <!-- Sized Down Modern Bottom Navigation Bar -->
+            <div class="bottom-nav">
+                <!-- Home Tab -->
+                <div class="nav-item active" id="tabFeedBtn" onclick="switchTab('feed')">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Home</span>
+                </div>
+
+                <!-- Chats Tab -->
+                <div class="nav-item" id="tabChatsBtn" onclick="switchTab('chats')">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                    <span>Chats</span>
+                    <span id="navChatsBadge" class="nav-badge" style="display: none;">0</span>
+                </div>
+
+                <!-- Menu Tab -->
+                <div class="nav-item" id="menuNavItem" onclick="toggleDropdownMenu(event)">
+                    <div class="dropdown-container">
+                        <button class="menu-icon-btn" title="Open Menu">
+                            <svg viewBox="0 0 24 24">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                            <span>Menu</span>
+                        </button>
+                        <div class="dropdown-menu" id="userDropdownMenu" onclick="event.stopPropagation()">
+                            <div class="dropdown-item" onclick="openMyProfile()"><span>👤</span> Profile</div>
+                            <div class="dropdown-item" onclick="openFollowingListModal()"><span>👣</span> Following</div>
+                            <div class="dropdown-item" onclick="openBlockedUsersModal()"><span>🚫</span> Blocked Users</div>
+                            <div class="dropdown-item" onclick="openSwitchModal()"><span>🔄</span> Switch Account</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chat Window -->
+        <section class="chat-win" id="chatWin">
+            <div class="chat-win-header">
+                <div class="chat-header-user" onclick="openTargetUserProfileFromHeader()">
+                    <button class="back-btn" onclick="closeChatWin(event)" id="backBtn">‹</button>
+                    <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
+                    <div>
+                        <span id="headerName" style="font-size: 16px; font-weight: 600;">Select a chat</span>
+                        <div id="headerStatus" style="font-size:11.5px; color:#e2e8f0; font-weight:normal;">Click to view profile</div>
+                    </div>
+                </div>
+
+                <!-- Chat Header Menu (···) -->
+                <div class="chat-menu-container">
+                    <button class="chat-menu-btn" onclick="toggleChatHeaderMenu(event)">···</button>
+                    <div class="chat-dropdown-menu" id="chatHeaderDropdownMenu" onclick="event.stopPropagation()">
+                        <div class="chat-dropdown-item" onclick="toggleMuteChat()"><span>🔔</span> <span id="muteMenuText">Mute</span></div>
+                        <div class="chat-dropdown-item" onclick="clearCurrentChat()"><span>🧹</span> Clear Chat</div>
+                        <div class="chat-dropdown-item danger" onclick="toggleBlockUser()"><span>🚫</span> <span id="blockMenuText">Block</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages" id="messagesArea"></div>
+            
+            <div class="input-bar" id="chatInputBar">
+                <input type="text" id="msgInput" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMsg()">
+                <button class="send-btn" onclick="sendMsg()">➤</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let isLoginMode = false;
+        let activeChatUser = null;
+        let currentLoggedInUser = "";
+        let alertCallback = null;
+        let tempSelectedMediaData = null;
+        let postToDeleteId = null;
+
+        function showAlert(message, title = "Notice", icon = "⚠️", callback = null) {
+            document.getElementById("customAlertTitle").textContent = title;
+            document.getElementById("customAlertMessage").textContent = message;
+            document.getElementById("customAlertIcon").textContent = icon;
+            document.getElementById("customAlertModal").style.display = "flex";
+            alertCallback = callback;
+        }
+
+        function closeCustomAlert() {
+            document.getElementById("customAlertModal").style.display = "none";
+            if (typeof alertCallback === "function") {
+                alertCallback();
+                alertCallback = null;
+            }
+        }
+
+        window.onload = function() {
+            let activeUserCheck = localStorage.getItem("quo_logged_in_user") || localStorage.getItem("telegram_logged_in_user");
+            
+            if (!activeUserCheck || activeUserCheck.trim() === "" || activeUserCheck === "null" || activeUserCheck === "undefined" || activeUserCheck === "@") {
+                localStorage.removeItem("quo_logged_in_user");
+                localStorage.removeItem("telegram_logged_in_user");
+                activeUserCheck = "";
+            }
+
+            let users = JSON.parse(localStorage.getItem("quo_registered_users")) || {};
+            if ("" in users) {
+                delete users[""];
+                localStorage.setItem("quo_registered_users", JSON.stringify(users));
+            }
+            
+            Object.keys(users).forEach(u => {
+                if (!u || u.trim() === "" || u === "@") {
+                    delete users[u];
+                    localStorage.setItem("quo_registered_users", JSON.stringify(users));
+                }
+            });
+
+            if (activeUserCheck && activeUserCheck.trim() !== "" && activeUserCheck !== "@") {
+                currentLoggedInUser = activeUserCheck;
+                document.getElementById("authOverlay").style.display = "none";
+                loadUserData();
+                renderFeedPosts();
+            } else {
+                currentLoggedInUser = "";
+                localStorage.removeItem("quo_logged_in_user");
+                localStorage.removeItem("telegram_logged_in_user");
+                document.getElementById("authOverlay").style.display = "flex";
+                if (!isLoginMode) toggleAuthMode();
+            }
+
+            setInterval(() => {
+                if (currentLoggedInUser && currentLoggedInUser.trim() !== "") {
+                    renderChats();
+                    updateNavChatsBadge();
+                    if (activeChatUser) {
+                        markMessagesAsRead(activeChatUser);
+                        renderMsgs();
+                    }
+                }
+            }, 1000);
+        };
+
+        function switchTab(tab) {
+            const chatsContainer = document.getElementById("chatsContainer");
+            const feedSection = document.getElementById("feedSection");
+            const tabChatsBtn = document.getElementById("tabChatsBtn");
+            const tabFeedBtn = document.getElementById("tabFeedBtn");
+
+            if (tab === 'feed') {
+                feedSection.style.display = "flex";
+                chatsContainer.style.display = "none";
+                tabFeedBtn.classList.add("active");
+                tabChatsBtn.classList.remove("active");
+                renderFeedPosts();
+            } else {
+                feedSection.style.display = "none";
+                chatsContainer.style.display = "flex";
+                tabChatsBtn.classList.add("active");
+                tabFeedBtn.classList.remove("active");
+                renderChats();
+                updateNavChatsBadge();
+            }
+        }
+
+        function toggleDropdownMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById("userDropdownMenu");
+            const menuNavItem = document.getElementById("menuNavItem");
+            
+            const isOpen = menu.style.display === "block";
+            menu.style.display = isOpen ? "none" : "block";
+            
+            if (!isOpen) {
+                menuNavItem.classList.add("active");
+            } else {
+                menuNavItem.classList.remove("active");
+            }
+        }
+
+        function toggleChatHeaderMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById("chatHeaderDropdownMenu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
+        window.addEventListener("click", function() {
+            const menu = document.getElementById("userDropdownMenu");
+            const menuNavItem = document.getElementById("menuNavItem");
+            if (menu) {
+                menu.style.display = "none";
+                if (menuNavItem) menuNavItem.classList.remove("active");
+            }
+            const chatMenu = document.getElementById("chatHeaderDropdownMenu");
+            if (chatMenu) chatMenu.style.display = "none";
+        });
+
+        function loadUserData() {
+            renderFeedPosts();
+            renderChats();
+            updateNavChatsBadge();
+            updateChatHeader(null);
+        }
+
+        function updateNavChatsBadge() {
+            const partners = getChatPartnersList();
+            let totalUnread = partners.reduce((sum, p) => sum + p.unread, 0);
+            const badgeEl = document.getElementById("navChatsBadge");
+            if (!badgeEl) return;
+
+            if (totalUnread > 0) {
+                badgeEl.textContent = totalUnread;
+                badgeEl.style.display = "inline-flex";
+            } else {
+                badgeEl.style.display = "none";
+            }
+        }
+
+        function updateChatHeader(username) {
+            const nameEl = document.getElementById("headerName");
+            const avatarEl = document.getElementById("chatHeaderAvatar");
+            const statusEl = document.getElementById("headerStatus");
+            
+            if (!username) {
+                nameEl.textContent = "Select a chat";
+                avatarEl.style.backgroundImage = "none";
+                avatarEl.textContent = "?";
+                statusEl.textContent = "Click to view profile";
+                return;
+            }
+
+            nameEl.textContent = username;
+            const targetAvatar = localStorage.getItem("quo_avatar_" + username.toLowerCase());
+            
+            if (targetAvatar) {
+                avatarEl.style.backgroundImage = `url('${targetAvatar}')`;
+                avatarEl.textContent = "";
+            } else {
+                avatarEl.style.backgroundImage = "none";
+                avatarEl.textContent = username.charAt(0).toUpperCase();
+            }
+
+            updateChatHeaderMenuState(username);
+        }
+
+        function updateChatHeaderMenuState(username) {
+            const me = currentLoggedInUser.toLowerCase();
+            const target = username.toLowerCase();
+
+            let mutedList = JSON.parse(localStorage.getItem("quo_muted_" + me)) || [];
+            let isMuted = mutedList.includes(target);
+            document.getElementById("muteMenuText").textContent = isMuted ? "Unmute" : "Mute";
+
+            let blockedList = JSON.parse(localStorage.getItem("quo_blocked_" + me)) || [];
+            let isBlocked = blockedList.includes(target);
+            
+            let targetBlockedMe = (JSON.parse(localStorage.getItem("quo_blocked_" + target)) || []).includes(me);
+
+            document.getElementById("blockMenuText").textContent = isBlocked ? "Unblock" : "Block";
+
+            const inputBar = document.getElementById("chatInputBar");
+            const statusEl = document.getElementById("headerStatus");
+
+            if (isBlocked) {
+                inputBar.style.display = "none";
+                statusEl.textContent = "You blocked this user";
+            } else if (targetBlockedMe) {
+                inputBar.style.display = "none";
+                statusEl.textContent = "Cannot send message";
+            } else {
+                inputBar.style.display = "flex";
+                statusEl.textContent = "Click to view profile";
+            }
+        }
+
+        function toggleMuteChat() {
+            if (!activeChatUser) return;
+            const me = currentLoggedInUser.toLowerCase();
+            const target = activeChatUser.toLowerCase();
+            let mutedList = JSON.parse(localStorage.getItem("quo_muted_" + me)) || [];
+
+            if (mutedList.includes(target)) {
+                mutedList = mutedList.filter(u => u !== target);
+                showAlert("Chat unmuted", "Success", "🔔");
+            } else {
+                mutedList.push(target);
+                showAlert("Chat muted", "Success", "🔕");
+            }
+            localStorage.setItem("quo_muted_" + me, JSON.stringify(mutedList));
+            updateChatHeaderMenuState(activeChatUser);
+        }
+
+        function clearCurrentChat() {
+            if (!activeChatUser) return;
+            let roomKey = getChatKey(currentLoggedInUser, activeChatUser);
+            localStorage.removeItem(roomKey);
+            renderMsgs();
+            renderChats();
+            updateNavChatsBadge();
+            showAlert("Chat cleared successfully", "Cleared", "🧹");
+        }
+
+        function toggleBlockUser() {
+            if (!activeChatUser) return;
+            const me = currentLoggedInUser.toLowerCase();
+            const target = activeChatUser.toLowerCase();
+            let blockedList = JSON.parse(localStorage.getItem("quo_blocked_" + me)) || [];
+
+            if (blockedList.includes(target)) {
+                blockedList = blockedList.filter(u => u !== target);
+                showAlert("User unblocked", "Success", "✅");
+            } else {
+                blockedList.push(target);
+                showAlert("User blocked. They can no longer message you or view your posts.", "Blocked", "🚫");
+            }
+            localStorage.setItem("quo_blocked_" + me, JSON.stringify(blockedList));
+            updateChatHeaderMenuState(activeChatUser);
+            renderChats();
+            updateNavChatsBadge();
+            renderFeedPosts();
+        }
+
+        function openBlockedUsersModal() {
+            const me = currentLoggedInUser.toLowerCase();
+            let blockedList = JSON.parse(localStorage.getItem("quo_blocked_" + me)) || [];
+            const container = document.getElementById("blockedUsersListContainer");
+            container.innerHTML = "";
+
+            if (blockedList.length === 0) {
+                container.innerHTML = `<div style="font-size:13.5px; color:#707579; padding:15px;">No blocked users</div>`;
+            } else {
+                blockedList.forEach(username => {
+                    const row = document.createElement("div");
+                    row.className = "blocked-row";
+                    row.innerHTML = `
+                        <span style="font-weight:600; font-size:14px;">@${username}</span>
+                        <button class="unblock-btn" onclick="unblockUserFromModal('${username}')">Unblock</button>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+            document.getElementById("blockedUsersModal").style.display = "flex";
+        }
+
+        function closeBlockedUsersModal(event) {
+            if (!event || event.target.id === "blockedUsersModal") {
+                document.getElementById("blockedUsersModal").style.display = "none";
+            }
+        }
+
+        function unblockUserFromModal(username) {
+            const me = currentLoggedInUser.toLowerCase();
+            let blockedList = JSON.parse(localStorage.getItem("quo_blocked_" + me)) || [];
+            blockedList = blockedList.filter(u => u !== username.toLowerCase());
+            localStorage.setItem("quo_blocked_" + me, JSON.stringify(blockedList));
+
+            openBlockedUsersModal();
+            renderFeedPosts();
+            if (activeChatUser && activeChatUser.toLowerCase() === username.toLowerCase()) {
+                updateChatHeaderMenuState(activeChatUser);
+            }
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById("authTitle").textContent = isLoginMode ? "QUO - Login" : "QUO - Register";
+            document.getElementById("authSubtitle").textContent = isLoginMode ? "Enter your username and password." : "Create a username and password.";
+            document.getElementById("authBtn").textContent = isLoginMode ? "Log In" : "Sign Up";
+            document.getElementById("switchAuthText").textContent = isLoginMode ? "Don't have an account? Register" : "Already have an account? Log In";
+        }
+
+        function handleAuth() {
+            const username = document.getElementById("authUsername").value.trim().toLowerCase();
+            const password = document.getElementById("authPassword").value.trim();
+
+            if (!username || username === "" || username === "@" || !password) {
+                showAlert("Please enter a valid Username and Password!", "Warning", "⚠️");
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem("quo_registered_users")) || {};
+
+            if (!isLoginMode) {
+                if (users[username]) {
+                    showAlert("This username is already taken. Please choose another one!", "Error", "❌");
+                    return;
+                }
+                users[username] = password;
+                localStorage.setItem("quo_registered_users", JSON.stringify(users));
+
+                showAlert("Registration successful! Please log in.", "Success", "✅", () => {
+                    toggleAuthMode();
+                    document.getElementById("authPassword").value = "";
+                });
+            } else {
+                if (!users[username] || users[username] !== password) {
+                    showAlert("Incorrect username or password!", "Error", "❌");
+                    return;
+                }
+                localStorage.setItem("quo_logged_in_user", username);
+                currentLoggedInUser = username;
+                document.getElementById("authOverlay").style.display = "none";
+                loadUserData();
+                renderFeedPosts();
+            }
+        }
+
+        function closeAuthOverlay(event) {
+            if (event.target.id === "authOverlay" && currentLoggedInUser && currentLoggedInUser.trim() !== "") {
+                document.getElementById("authOverlay").style.display = "none";
+            }
+        }
+
+        function openSwitchModal() {
+            const container = document.getElementById("savedAccountListContainer");
+            let users = JSON.parse(localStorage.getItem("quo_registered_users")) || {};
+            container.innerHTML = "";
+
+            const usernames = Object.keys(users).filter(u => u && u.trim() !== "" && u !== "@");
+            if (usernames.length === 0) {
+                container.innerHTML = `<div style="font-size:13.5px; color:#707579; padding:12px;">No saved accounts</div>`;
+            } else {
+                usernames.forEach(u => {
+                    const div = document.createElement("div");
+                    div.className = `account-item ${u === currentLoggedInUser ? 'active-acc' : ''}`;
+                    div.innerHTML = `<span>@${u}</span>${u === currentLoggedInUser ? '<span style="font-size:11.5px; color:var(--telegram-blue); font-weight:600;">Active</span>' : ''}`;
+                    div.onclick = () => {
+                        if (u !== currentLoggedInUser) {
+                            localStorage.setItem("quo_logged_in_user", u);
+                            location.reload();
+                        }
+                    };
+                    container.appendChild(div);
+                });
+            }
+            document.getElementById("switchAccountModal").style.display = "flex";
+        }
+
+        function closeSwitchModal(event) {
+            if (!event || event.target.id === "switchAccountModal") {
+                document.getElementById("switchAccountModal").style.display = "none";
+            }
+        }
+
+        function openAddAccountFromModal() {
+            document.getElementById("switchAccountModal").style.display = "none";
+            localStorage.removeItem("quo_logged_in_user");
+            localStorage.removeItem("telegram_logged_in_user");
+            location.reload();
+        }
+
+        function getFollowData(username) {
+            let followers = JSON.parse(localStorage.getItem("quo_followers_" + username.toLowerCase())) || [];
+            return { followers };
+        }
+
+        function getFollowingList(username) {
+            let registeredUsers = JSON.parse(localStorage.getItem("quo_registered_users")) || {};
+            let following = [];
+            Object.keys(registeredUsers).forEach(u => {
+                if (u && u !== username.toLowerCase()) {
+                    let uFollowers = JSON.parse(localStorage.getItem("quo_followers_" + u)) || [];
+                    if (uFollowers.includes(username.toLowerCase())) {
+                        following.push(u);
+                    }
+                }
+            });
+            return following;
+        }
+
+        function showFollowersListModal(targetUser) {
+            const { followers } = getFollowData(targetUser);
+            const container = document.getElementById("followersListContainer");
+            document.getElementById("followersModalTitle").textContent = `@${targetUser}'s Followers (${followers.length})`;
+            container.innerHTML = "";
+
+            if (followers.length === 0) {
+                container.innerHTML = `<div style="font-size:13.5px; color:#707579; padding:12px;">No followers yet.</div>`;
+            } else {
+                followers.forEach(followerUsername => {
+                    const fAvatar = localStorage.getItem("quo_avatar_" + followerUsername);
+                    let avatarStyle = fAvatar ? `background-image: url('${fAvatar}'); background-size: cover;` : "background: #3390ec;";
+                    let avatarText = fAvatar ? "" : followerUsername.charAt(0).toUpperCase();
+
+                    const row = document.createElement("div");
+                    row.className = "follower-row";
+                    row.onclick = () => {
+                        closeFollowersModal();
+                        openUserProfile(followerUsername);
+                    };
+
+                    row.innerHTML = `
+                        <div class="avatar" style="width: 36px; height: 36px; font-size: 13.5px; ${avatarStyle}">${avatarText}</div>
+                        <span style="font-weight: 600; font-size: 14.5px; color: var(--text-primary);">@${followerUsername}</span>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            document.getElementById("followersModal").style.display = "flex";
+        }
+
+        function openFollowingListModal() {
+            const following = getFollowingList(currentLoggedInUser);
+            const container = document.getElementById("followersListContainer");
+            document.getElementById("followersModalTitle").textContent = `Following (${following.length})`;
+            container.innerHTML = "";
+
+            if (following.length === 0) {
+                container.innerHTML = `<div style="font-size:13.5px; color:#707579; padding:12px;">Not following anyone yet.</div>`;
+            } else {
+                following.forEach(fUser => {
+                    const fAvatar = localStorage.getItem("quo_avatar_" + fUser);
+                    let avatarStyle = fAvatar ? `background-image: url('${fAvatar}'); background-size: cover;` : "background: #3390ec;";
+                    let avatarText = fAvatar ? "" : fUser.charAt(0).toUpperCase();
+
+                    const row = document.createElement("div");
+                    row.className = "follower-row";
+                    row.onclick = () => {
+                        closeFollowersModal();
+                        openUserProfile(fUser);
+                    };
+
+                    row.innerHTML = `
+                        <div class="avatar" style="width: 36px; height: 36px; font-size: 13.5px; ${avatarStyle}">${avatarText}</div>
+                        <span style="font-weight: 600; font-size: 14.5px; color: var(--text-primary);">@${fUser}</span>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            document.getElementById("followersModal").style.display = "flex";
+        }
+
+        function closeFollowersModal(event) {
+            if (!event || event.target.id === "followersModal") {
+                document.getElementById("followersModal").style.display = "none";
+            }
+        }
+
+        function openMyProfile() {
+            if (!currentLoggedInUser || currentLoggedInUser.trim() === "" || currentLoggedInUser === "@") {
+                showAlert("សូមធ្វើការ Login ចូលគណនីរបស់អ្នកជាមុនសិន!", "Warning", "⚠️");
+                localStorage.removeItem("quo_logged_in_user");
+                localStorage.removeItem("telegram_logged_in_user");
+                document.getElementById("profileModal").style.display = "none";
+                document.getElementById("authOverlay").style.display = "flex";
+                return;
+            }
+
+            const { followers } = getFollowData(currentLoggedInUser);
+            const savedAvatar = localStorage.getItem("quo_avatar_" + currentLoggedInUser);
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            let myPosts = allPosts.filter(p => p.author && p.author.toLowerCase() === currentLoggedInUser.toLowerCase());
+
+            let avatarStyle = savedAvatar ? `background-image: url('${savedAvatar}'); background-size: cover;` : "";
+            let avatarText = savedAvatar ? "" : currentLoggedInUser.charAt(0).toUpperCase();
+
+            let postsHtml = "";
+            if (myPosts.length === 0) {
+                postsHtml = `<div style="font-size:13.5px; color:#707579; text-align:center; padding: 20px;">You have no posts yet.</div>`;
+            } else {
+                myPosts.forEach(post => {
+                    let mediaBlock = "";
+                    if (post.media) {
+                        let mediaSrc = post.mediaType === 'video' ? (post.thumbnail || post.media) : post.media;
+                        mediaBlock = `<img class="my-post-media" src="${mediaSrc}" onclick="viewSinglePost(${post.id})" style="user-select: none;" oncontextmenu="return false;">`;
+                    }
+                    let isPrivate = post.isPrivate || false;
+
+                    postsHtml += `
+                        <div class="my-post-item">
+                            <div class="my-post-header">
+                                <span>${post.time}</span>
+                                <span style="font-weight:600; color:${isPrivate ? '#d97706' : '#16a34a'}">${isPrivate ? '🔒 Private' : '🌍 Public'}</span>
+                            </div>
+                            ${post.text ? `<div class="my-post-text">${post.text}</div>` : ''}
+                            ${mediaBlock}
+                            <div class="my-post-actions">
+                                <button class="mini-action-btn btn-privacy" onclick="togglePostPrivacy(${post.id})">${isPrivate ? 'Make Public' : 'Make Private'}</button>
+                                <button class="mini-action-btn btn-delete-post" onclick="deleteMyPost(${post.id})">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById("profileCardContent").innerHTML = `
+                <div class="profile-avatar" style="${avatarStyle}" onclick="document.getElementById('avatarInputFile').click()">${avatarText}</div>
+                <input type="file" id="avatarInputFile" accept="image/*" style="display: none;" onchange="uploadMyAvatar(event)">
+                
+                <h3 style="font-size: 19px; font-weight: 700; margin-bottom: 2px;">${currentLoggedInUser.toUpperCase()}</h3>
+                <p style="font-size: 13.5px; color: #707579; margin-bottom: 8px;">@${currentLoggedInUser}</p>
+                
+                <div class="profile-stats">
+                    <div class="follower-stat-btn" onclick="showFollowersListModal('${currentLoggedInUser}')">
+                        <b>${followers.length}</b> Followers
+                    </div>
+                    <div class="follower-stat-btn">
+                        <b>${myPosts.length}</b> Posts
+                    </div>
+                </div>
+
+                <div class="profile-body">
+                    <div style="font-size: 14.5px; font-weight: 700; text-align: left; margin: 10px 0 8px 2px; color: #334155;">My Posts</div>
+                    ${postsHtml}
+                </div>
+
+                <div style="margin-top: 14px;">
+                    <button onclick="closeProfile()" style="width: 100%; padding: 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 14px; font-size: 14.5px; font-weight: 600; cursor: pointer;">Close</button>
+                </div>
+            `;
+            document.getElementById("profileModal").style.display = "flex";
+        }
+
+        function viewSinglePost(postId) {
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            let post = allPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            document.getElementById("viewPostAuthor").textContent = `@${post.author}`;
+            document.getElementById("viewPostText").textContent = post.text || "";
+
+            const mediaContainer = document.getElementById("viewPostMediaContainer");
+            mediaContainer.innerHTML = "";
+
+            if (post.media) {
+                if (post.mediaType === 'video') {
+                    mediaContainer.innerHTML = `
+                        <video id="modalVideoPlayer" src="${post.media}" autoplay loop playsinline muted onclick="toggleModalVideoPlay('modalVideoPlayer')" style="width:100%; height:100%; max-height:450px; object-fit:contain; background:#000; cursor:pointer;" oncontextmenu="return false;"></video>`;
+                } else {
+                    mediaContainer.innerHTML = `<img src="${post.media}" style="width:100%; height:100%; max-height:450px; object-fit:contain; background:#000;" oncontextmenu="return false;">`;
+                }
+            }
+
+            document.getElementById("viewPostModal").style.display = "flex";
+        }
+
+        function toggleModalVideoPlay(videoId) {
+            const vid = document.getElementById(videoId);
+            if (!vid) return;
+
+            if (vid.paused) {
+                vid.play();
+            } else {
+                vid.pause();
+            }
+        }
+
+        function closeViewPostModal(event) {
+            if (!event || event.target.id === "viewPostModal") {
+                document.getElementById("viewPostModal").style.display = "none";
+                document.getElementById("viewPostMediaContainer").innerHTML = "";
+            }
+        }
+
+        function deleteMyPost(postId) {
+            postToDeleteId = postId;
+            document.getElementById("postDeleteConfirmModal").style.display = "flex";
+        }
+
+        function closePostDeleteModal(event) {
+            if (!event || event.target.id === "postDeleteConfirmModal") {
+                document.getElementById("postDeleteConfirmModal").style.display = "none";
+                postToDeleteId = null;
+            }
+        }
+
+        document.getElementById("confirmDeletePostBtn").onclick = function() {
+            if (postToDeleteId !== null) {
+                let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+                allPosts = allPosts.filter(p => p.id !== postToDeleteId);
+                localStorage.setItem("quo_global_posts", JSON.stringify(allPosts));
+                
+                closePostDeleteModal();
+                openMyProfile();
+                renderFeedPosts();
+                showAlert("Post deleted successfully!", "Success", "🗑️");
+            }
+        };
+
+        function togglePostPrivacy(postId) {
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            allPosts = allPosts.map(p => {
+                if (p.id === postId) {
+                    p.isPrivate = !p.isPrivate;
+                }
+                return p;
+            });
+            localStorage.setItem("quo_global_posts", JSON.stringify(allPosts));
+            openMyProfile();
+            renderFeedPosts();
+        }
+
+        function openUserProfile(username) {
+            if (username.toLowerCase() === currentLoggedInUser.toLowerCase()) {
+                openMyProfile();
+                return;
+            }
+
+            const { followers } = getFollowData(username);
+            const isFollowing = followers.includes(currentLoggedInUser.toLowerCase());
+            const targetAvatar = localStorage.getItem("quo_avatar_" + username);
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            let userPublicPosts = allPosts.filter(p => p.author && p.author.toLowerCase() === username.toLowerCase() && !p.isPrivate);
+
+            let avatarStyle = targetAvatar ? `background-image: url('${targetAvatar}'); background-size: cover;` : "";
+            let avatarText = targetAvatar ? "" : username.charAt(0).toUpperCase();
+
+            let postsHtml = "";
+            if (userPublicPosts.length === 0) {
+                postsHtml = `<div style="font-size:13.5px; color:#707579; text-align:center; padding: 20px;">No public posts yet.</div>`;
+            } else {
+                userPublicPosts.forEach(post => {
+                    let mediaBlock = "";
+                    if (post.media) {
+                        let mediaSrc = post.mediaType === 'video' ? (post.thumbnail || post.media) : post.media;
+                        mediaBlock = `<img class="my-post-media" src="${mediaSrc}" onclick="viewSinglePost(${post.id})" style="user-select: none;" oncontextmenu="return false;">`;
+                    }
+                    postsHtml += `
+                        <div class="my-post-item">
+                            <div class="my-post-header"><span>${post.time}</span></div>
+                            ${post.text ? `<div class="my-post-text">${post.text}</div>` : ''}
+                            ${mediaBlock}
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById("profileCardContent").innerHTML = `
+                <div class="profile-avatar" style="${avatarStyle}">${avatarText}</div>
+                <h3 style="font-size: 19px; font-weight: 700; margin-bottom: 2px;">${username.toUpperCase()}</h3>
+                <p style="font-size: 13.5px; color: #707579; margin-bottom: 8px;">@${username}</p>
+                
+                <div class="profile-stats">
+                    <div class="follower-stat-btn" onclick="showFollowersListModal('${username}')">
+                        <b>${followers.length}</b> Followers
+                    </div>
+                    <div class="follower-stat-btn">
+                        <b>${userPublicPosts.length}</b> Posts
+                    </div>
+                </div>
+
+                <button onclick="toggleFollowUser('${username}')" style="width: 100%; padding: 10px; background: ${isFollowing ? '#e4e4e7' : 'var(--telegram-blue)'}; color: ${isFollowing ? '#333' : 'white'}; border: none; border-radius: 14px; font-size: 14.5px; font-weight: 600; cursor: pointer; margin: 10px 0; box-shadow: ${isFollowing ? 'none' : '0 4px 12px rgba(51,144,236,0.3)'};">
+                    ${isFollowing ? 'Following' : 'Follow'}
+                </button>
+
+                <div class="profile-body">
+                    <div style="font-size: 14.5px; font-weight: 700; text-align: left; margin: 8px 0 8px 2px; color: #334155;">Posts</div>
+                    ${postsHtml}
+                </div>
+
+                <button onclick="closeProfile()" style="width: 100%; margin-top: 12px; padding: 11px; background: #f1f5f9; color: #475569; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer;">Close</button>
+            `;
+            document.getElementById("profileModal").style.display = "flex";
+        }
+
+        function toggleFollowUser(targetUser) {
+            targetUser = targetUser.toLowerCase();
+            let targetFollowers = JSON.parse(localStorage.getItem("quo_followers_" + targetUser)) || [];
+            const me = currentLoggedInUser.toLowerCase();
+
+            if (targetFollowers.includes(me)) {
+                targetFollowers = targetFollowers.filter(u => u !== me);
+            } else {
+                targetFollowers.push(me);
+            }
+
+            localStorage.setItem("quo_followers_" + targetUser, JSON.stringify(targetFollowers));
+            openUserProfile(targetUser);
+        }
+
+        function openTargetUserProfileFromHeader() {
+            if (activeChatUser) {
+                openUserProfile(activeChatUser);
+            }
+        }
+
+        function uploadMyAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                localStorage.setItem("quo_avatar_" + currentLoggedInUser, e.target.result);
+                openMyProfile();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closeProfile(event) {
+            if (!event || event.target.id === "profileModal") {
+                document.getElementById("profileModal").style.display = "none";
+            }
+        }
+
+        function openTiktokUpload() {
+            document.getElementById("tiktokUploadModal").style.display = "flex";
+        }
+
+        function closeTiktokUpload(event) {
+            if (!event || event.target.id === "tiktokUploadModal") {
+                document.getElementById("tiktokUploadModal").style.display = "none";
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type.startsWith('video') && file.size > 95 * 1024 * 1024) {
+                showAlert("Video size exceeds 95MB limit! Please choose a smaller video.", "File Too Large", "⚠️");
+                event.target.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempSelectedMediaData = {
+                    data: e.target.result,
+                    type: file.type.startsWith('video') ? 'video' : 'image'
+                };
+
+                const container = document.getElementById("mediaPreviewContainer");
+                const imgPre = document.getElementById("imgPreview");
+                const vidPre = document.getElementById("vidPreview");
+
+                container.style.display = "block";
+                if (tempSelectedMediaData.type === 'video') {
+                    vidPre.src = tempSelectedMediaData.data;
+                    vidPre.style.display = "block";
+                    imgPre.style.display = "none";
+                } else {
+                    imgPre.src = tempSelectedMediaData.data;
+                    imgPre.style.display = "block";
+                    vidPre.style.display = "none";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedMedia() {
+            tempSelectedMediaData = null;
+            document.getElementById("mediaPreviewContainer").style.display = "none";
+            document.getElementById("postFilePicker").value = "";
+            document.getElementById("imgPreview").src = "";
+            document.getElementById("vidPreview").src = "";
+        }
+
+        function generateVideoThumbnail(videoSrc, callback) {
+            const video = document.createElement('video');
+            video.src = videoSrc;
+            video.crossOrigin = 'anonymous';
+            video.muted = true;
+            video.playsInline = true;
+            video.currentTime = 0.5;
+
+            video.onloadeddata = function() {
+                setTimeout(() => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth || 480;
+                        canvas.height = video.videoHeight || 854;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        callback(thumbnailUrl);
+                    } catch (err) {
+                        callback('');
+                    }
+                }, 300);
+            };
+
+            video.onerror = function() {
+                callback('');
+            };
+        }
+
+        function createPost() {
+            const text = document.getElementById("postTextInput").value.trim();
+
+            if (!text && !tempSelectedMediaData) {
+                showAlert("Please write something or select a photo/video!", "Warning", "⚠️");
+                return;
+            }
+
+            if (tempSelectedMediaData && tempSelectedMediaData.type === 'video') {
+                generateVideoThumbnail(tempSelectedMediaData.data, function(thumbnailUrl) {
+                    savePostData(text, thumbnailUrl);
+                });
+            } else {
+                savePostData(text, null);
+            }
+        }
+
+        function savePostData(text, thumbnailUrl) {
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            const newPost = {
+                id: Date.now(),
+                author: currentLoggedInUser,
+                text: text,
+                media: tempSelectedMediaData ? tempSelectedMediaData.data : null,
+                mediaType: tempSelectedMediaData ? tempSelectedMediaData.type : null,
+                thumbnail: thumbnailUrl,
+                isPrivate: false,
+                time: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+            };
+
+            allPosts.unshift(newPost);
+            localStorage.setItem("quo_global_posts", JSON.stringify(allPosts));
+
+            document.getElementById("postTextInput").value = "";
+            clearSelectedMedia();
+            closeTiktokUpload();
+            renderFeedPosts();
+            showAlert("Posted successfully!", "Success", "✅");
+        }
+
+        function renderFeedPosts() {
+            const container = document.getElementById("tiktokFeedContainer");
+            if (!container) return;
+            let allPosts = JSON.parse(localStorage.getItem("quo_global_posts")) || [];
+            const me = currentLoggedInUser.toLowerCase();
+
+            let myBlockedList = JSON.parse(localStorage.getItem("quo_blocked_" + me)) || [];
+
+            let visiblePosts = allPosts.filter(post => {
+                if (!post.author) return false;
+                const author = post.author.toLowerCase();
+                if (post.isPrivate && author !== me) return false;
+                if (myBlockedList.includes(author)) return false;
+                let authorBlockedMe = (JSON.parse(localStorage.getItem("quo_blocked_" + author)) || []).includes(me);
+                if (authorBlockedMe) return false;
+
+                return true;
+            });
+
+            container.innerHTML = "";
+
+            if (visiblePosts.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#fff; text-align:center; padding:20px;">
+                        <p style="margin-bottom:15px; font-size:14.5px;">No reels available.</p>
+                        <button onclick="openTiktokUpload()" class="tiktok-create-trigger" style="padding:12px 24px; font-size:14.5px;">+ Upload</button>
+                    </div>`;
+                return;
+            }
+
+            visiblePosts.forEach((post, index) => {
+                const authorAvatar = localStorage.getItem("quo_avatar_" + post.author);
+                let avatarStyle = authorAvatar ? `background-image: url('${authorAvatar}'); background-size: cover;` : "";
+                let avatarText = authorAvatar ? "" : post.author.charAt(0).toUpperCase();
+
+                let mediaHtml = "";
+                const vidId = `feedVideo_${post.id}_${index}`;
+                if (post.media) {
+                    if (post.mediaType === 'video') {
+                        mediaHtml = `<video id="${vidId}" class="tiktok-media" src="${post.media}" poster="${post.thumbnail || ''}" loop playsinline muted onclick="toggleModalVideoPlay('${vidId}')" style="-webkit-user-select: none; user-select: none;" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture></video>`;
+                    } else {
+                        mediaHtml = `<img class="tiktok-media" src="${post.media}" style="-webkit-user-select: none; user-select: none;" oncontextmenu="return false;">`;
+                    }
+                } else {
+                    mediaHtml = `<div class="tiktok-media" style="background: linear-gradient(135deg, #2b5278, #1c242b);"></div>`;
+                }
+
+                const reel = document.createElement("div");
+                reel.className = "tiktok-reel";
+                reel.innerHTML = `
+                    ${mediaHtml}
+                    <div class="tiktok-overlay">
+                        <div class="tiktok-top-bar">
+                            <span style="color:white; font-weight:700; font-size:16.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.6);">QUO Reels 1080p ${post.isPrivate ? '(🔒 Private)' : ''}</span>
+                            <button onclick="openTiktokUpload()" class="tiktok-create-trigger">+ Upload</button>
+                        </div>
+                        <div class="tiktok-content-box">
+                            <div class="tiktok-user-row" onclick="openUserProfile('${post.author}')">
+                                <div class="avatar" style="width:38px; height:38px; font-size:14.5px; ${avatarStyle}">${avatarText}</div>
+                                <div>
+                                    <div class="tiktok-username">@${post.author}</div>
+                                    <div class="tiktok-time">${post.time}</div>
+                                </div>
+                            </div>
+                            ${post.text ? `<div class="tiktok-desc">${post.text}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(reel);
+            });
+
+            setupVideoAutoplayObserver();
+        }
+
+        function setupVideoAutoplayObserver() {
+            const container = document.getElementById("tiktokFeedContainer");
+            const videos = container.querySelectorAll("video");
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const vid = entry.target;
+                    if (entry.isIntersecting) {
+                        vid.play().catch(() => {});
+                    } else {
+                        vid.pause();
+                        vid.currentTime = 0;
+                    }
+                });
+            }, { threshold: 0.6 });
+
+            videos.forEach(v => observer.observe(v));
+        }
+
+        function getChatKey(user1, user2) {
+            return "quo_room_" + [user1.toLowerCase(), user2.toLowerCase()].sort().join("_");
+        }
+
+        function getChatPartnersList() {
+            let registeredUsers = JSON.parse(localStorage.getItem("quo_registered_users")) || {};
+            let partners = [];
+            
+            Object.keys(registeredUsers).forEach(u => {
+                if (u && u.trim() !== "" && u !== "@" && u !== currentLoggedInUser) {
+                    let roomKey = getChatKey(currentLoggedInUser, u);
+                    let messages = JSON.parse(localStorage.getItem(roomKey)) || [];
+                    let lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+                    
+                    let unreadCount = messages.filter(m => m.sender.toLowerCase() === u.toLowerCase() && !m.read).length;
+
+                    partners.push({
+                        username: u,
+                        lastMsg: lastMsg ? lastMsg.text : "No messages yet",
+                        time: lastMsg ? lastMsg.time : "",
+                        timestamp: lastMsg ? lastMsg.timestamp : 0,
+                        unread: unreadCount
+                    });
+                }
+            });
+
+            partners.sort((a, b) => b.timestamp - a.timestamp);
+            return partners;
+        }
+
+        function renderChats() {
+            const list = document.getElementById("chatList");
+            if (!list) return;
+            const searchInputEl = document.getElementById("searchInput");
+            const search = searchInputEl ? searchInputEl.value.trim().toLowerCase() : "";
+            list.innerHTML = "";
+
+            let partners = getChatPartnersList();
+            const filtered = partners.filter(p => p.username.toLowerCase().includes(search));
+
+            if (filtered.length > 0) {
+                filtered.forEach(p => {
+                    const div = document.createElement("div");
+                    div.className = `chat-item`;
+                    div.onclick = () => openChat(p.username);
+
+                    const targetAvatar = localStorage.getItem("quo_avatar_" + p.username);
+                    let avatarStyle = `background: #3390ec`;
+                    let avatarText = p.username.charAt(0).toUpperCase();
+                    if (targetAvatar) {
+                        avatarStyle = `background-image: url('${targetAvatar}'); background-size: cover;`;
+                        avatarText = "";
+                    }
+
+                    div.innerHTML = `
+                        <div class="avatar" style="${avatarStyle}" onclick="event.stopPropagation(); openUserProfile('${p.username}')">${avatarText}</div>
+                        <div class="chat-info">
+                            <div class="chat-top">
+                                <span>${p.username}</span>
+                                <span class="time">${p.time}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="chat-msg">${p.lastMsg}</span>
+                                ${p.unread > 0 ? `<span class="badge">${p.unread}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } else {
+                list.innerHTML = `<div style="text-align:center; color:#707579; padding: 25px; font-size: 14px;">No users found</div>`;
+            }
+        }
+
+        function openChat(username) {
+            activeChatUser = username;
+            updateChatHeader(username);
+            document.getElementById("chatWin").classList.add("open");
+            if (window.innerWidth <= 768) {
+                document.getElementById("backBtn").style.display = "flex";
+            }
+            markMessagesAsRead(username);
+            renderMsgs();
+            renderChats();
+            updateNavChatsBadge();
+        }
+
+        function closeChatWin(event) {
+            event.stopPropagation();
+            activeChatUser = null;
+            document.getElementById('chatWin').classList.remove('open');
+            renderChats();
+            updateNavChatsBadge();
+        }
+
+        function markMessagesAsRead(targetUser) {
+            let roomKey = getChatKey(currentLoggedInUser, targetUser);
+            let messages = JSON.parse(localStorage.getItem(roomKey)) || [];
+            let updated = false;
+
+            messages.forEach(m => {
+                if (m.sender.toLowerCase() === targetUser.toLowerCase() && !m.read) {
+                    m.read = true;
+                    updated = true;
+                }
+            });
+
+            if (updated) {
+                localStorage.setItem(roomKey, JSON.stringify(messages));
+                updateNavChatsBadge();
+            }
+        }
+
+        function renderMsgs() {
+            const area = document.getElementById("messagesArea");
+            if (!activeChatUser) return;
+
+            let roomKey = getChatKey(currentLoggedInUser, activeChatUser);
+            let messages = JSON.parse(localStorage.getItem(roomKey)) || [];
+
+            const isScrolledToBottom = area.scrollHeight - area.scrollTop <= area.clientHeight + 50;
+
+            area.innerHTML = "";
+            if (messages.length === 0) {
+                area.innerHTML = `<div style="text-align:center; font-size:13.5px; color:#707579; margin-top: 25px;">No messages yet. Say hi!</div>`;
+                return;
+            }
+
+            let lastOutIndex = -1;
+            for (let i = messages.length - 1; i >= 0; i--) {
+                if (messages[i].sender.toLowerCase() === currentLoggedInUser.toLowerCase()) {
+                    lastOutIndex = i;
+                    break;
+                }
+            }
+
+            messages.forEach((m, index) => {
+                const container = document.createElement("div");
+                let isOut = m.sender.toLowerCase() === currentLoggedInUser.toLowerCase();
+                container.className = `msg-container ${isOut ? 'out' : 'in'}`;
+
+                let statusHtml = "";
+                if (isOut && index === lastOutIndex) {
+                    statusHtml = m.read ? `<span class="status-text seen">Seen</span>` : `<span class="status-text sent">Sent</span>`;
+                }
+
+                container.innerHTML = `
+                    <div class="msg">${m.text}</div>
+                    <div class="msg-info">
+                        <span>${m.time}</span>
+                        ${statusHtml}
+                    </div>
+                `;
+                area.appendChild(container);
+            });
+
+            if (isScrolledToBottom) {
+                area.scrollTop = area.scrollHeight;
+            }
+        }
+
+        function sendMsg() {
+            if (!activeChatUser) return;
+            
+            const me = currentLoggedInUser.toLowerCase();
+            const target = activeChatUser.toLowerCase();
+
+            let myBlocked = (JSON.parse(localStorage.getItem("quo_blocked_" + me)) || []).includes(target);
+            let targetBlockedMe = (JSON.parse(localStorage.getItem("quo_blocked_" + target)) || []).includes(me);
+
+            if (myBlocked || targetBlockedMe) {
+                showAlert("Cannot send message. You or this user has blocked each other.", "Blocked", "🚫");
+                return;
+            }
+
+            const input = document.getElementById("msgInput");
+            const text = input.value.trim();
+            if (!text) return;
+
+            let roomKey = getChatKey(currentLoggedInUser, activeChatUser);
+            let messages = JSON.parse(localStorage.getItem(roomKey)) || [];
+
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messages.push({
+                sender: currentLoggedInUser,
+                text: text,
+                time: now,
+                timestamp: Date.now(),
+                read: false
+            });
+
+            localStorage.setItem(roomKey, JSON.stringify(messages));
+
+            input.value = "";
+            renderMsgs();
+            renderChats();
+            updateNavChatsBadge();
+        }
+    </script>
+</body>
+</html>
